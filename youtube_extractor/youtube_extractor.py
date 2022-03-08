@@ -6,7 +6,6 @@ from tqdm import tqdm
 
 
 URL = "https://www.googleapis.com/youtube/v3/"
-API_KEY = "AIzaSyDGOfdI2Ta0t_G-rb0G2UueitF569bwZ7s"
 
 
 def get_video_comments(video_id, comment_list = None, 
