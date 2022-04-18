@@ -6,9 +6,10 @@ from tqdm import tqdm
 
 
 URL = "https://www.googleapis.com/youtube/v3/"
+API_KEY = "api-key"
 
 
-def get_video_comments(video_id, comment_list = None, 
+def get_video_comments(video_id, get_replies = True, comment_list = None, 
                        n = 1, next_page_token = None):
     """
     Receives a video 
@@ -38,18 +39,19 @@ def get_video_comments(video_id, comment_list = None,
         reply_count = comment_info['snippet']['totalReplyCount']
         username = comment_info['snippet']['topLevelComment']['snippet']['authorDisplayName']
         parent_id = comment_info['snippet']['topLevelComment']['id']
+        timestamp = comment_info["snippet"]["topLevelComment"]["snippet"]["publishedAt"]
 
         comment = {"number": n, "text": text.replace('\n', ' '), "username":username, 
-                   "parent_id":parent_id, "like_count": like_count, "reply_count": reply_count}      
+                   "parent_id":parent_id, "like_count": like_count, "reply_count": reply_count, "timestamp": timestamp}      
         
-        if reply_count > 0:
+        if (reply_count > 0) & (get_replies):
             comment["replies"] = list(reversed(get_comment_replies(video_id, next_page_token, parent_id)))
             
         comment_list.append(comment)
         n = n + 1
 
     if 'nextPageToken' in resource:
-        comment_list.extend(get_video_comments(video_id, next_page_token = resource["nextPageToken"], n = n))
+        comment_list.extend(get_video_comments(video_id, get_replies, next_page_token = resource["nextPageToken"], n = n))
     
     return comment_list
     
@@ -76,8 +78,9 @@ def get_comment_replies(video_id, next_page_token, parent_id, reply_list = None,
         text = comment_info['snippet']['textDisplay']
         like_count = comment_info['snippet']['likeCount']
         username = comment_info['snippet']['authorDisplayName']
+        timestamp = comment_info["snippet"]["publishedAt"]
 
-        reply = {"comment_number":cn, "text": text.replace('\n', ' '), "like_count": like_count, "username": username}
+        reply = {"comment_number":cn, "text": text.replace('\n', ' '), "like_count": like_count, "username": username, "timestamp":timestamp}
         reply_list.append(reply)
         cn = cn + 1
 
@@ -97,24 +100,24 @@ def strip_video_url(video_url):
     if path:
         return path[-1]
 
-def get_video_comments_from_url(video_url):
+def get_video_comments_from_url(video_url, get_replies):
     video_id = strip_video_url(video_url)
-    comments = get_video_comments(video_id)
+    comments = get_video_comments(video_id, get_replies = get_replies)
 
     return comments
 
-def extract_video_list(url_list, to_json = False, path = ""):
+def extract_video_list(url_list, get_replies = True, to_json = False, path = ""):
     video_list = []
     for video_url in tqdm(url_list):
         video_id = strip_video_url(video_url)
         video = get_video_metadata(video_id)
-        video_comments = get_video_comments_from_url(video_id)
+        video_comments = get_video_comments_from_url(video_id, get_replies = get_replies)
         video["comments"] = video_comments
         video_list.append(video)
 
     if to_json:
         for video in video_list:
-            filename = "{}/{}_{}".format(path, video["channelTitle"].replace(" ", '_'), video["title"].replace(" ", '_'))
+            filename = "{}/{}_{}".format(path, video["channelTitle"].replace(" ", '_').replace("\"", ""), video["title"].replace(" ", '_').replace("\"", ""))
             dict_to_json(video, filename)
 
     return video_list     
