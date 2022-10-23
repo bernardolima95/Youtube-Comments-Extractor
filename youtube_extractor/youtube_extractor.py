@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 
 URL = "https://www.googleapis.com/youtube/v3/"
-API_KEY = "AIzaSyD286VGTB47DE3rC2Lq_EONCmVBuerOQds"
+API_KEY = ""
 
 def extract_video_list(url_list, get_replies = True, to_json = False, path = ""):
     """
